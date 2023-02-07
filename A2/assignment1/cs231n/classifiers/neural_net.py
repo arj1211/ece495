@@ -80,7 +80,13 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # Start with first layer; multiply input with first set of weights and add bias term
+        z = np.dot(X, W1) + b1
+        # Clip negative values with ReLU activation function
+        g = np.where(z > 0, z, 0)
+        # Funnel the result into second layer; multiply values with second set of weights and add second bias term
+        scores = np.dot(g, W2) + b2
+        # Now have raw scores output of network
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -98,7 +104,39 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # To compute loss, need to convert raw score values into softmax probabilities
+        def softmax(_scores):
+          escores = np.exp(_scores)
+          probs = escores.T / sum(escores.T)
+          return probs.T
+        probs = softmax(scores)
+
+        # The integer representation of true class labels are converted to a one-hot encoded format, 
+        # where each label is represented as a binary vector with a 1 in the position of the true class 
+        # and 0s in all other positions. This provides a binary mask for easy selection of probabilities 
+        # of correct class labels. The cross entropy loss is calculated as the negative logarithm of the 
+        # predicted probability of the true class. The loss is then averaged over all samples.
+        # This value is also referred to as "data loss"
+        def avg_cross_entropy_data_loss(norm_scores):
+          y_true_mask = np.zeros_like(norm_scores)
+          y_true_mask[np.arange(N), y] = 1
+          cel = -np.mean(sum(y_true_mask.T * np.log(norm_scores).T))
+          return cel
+
+        # The L2 regularization loss is calculated as the sum of the squares of the model parameters, 
+        # typically the weights. This loss is used to penalize large weights and prevent overfitting.
+        def L2_regularization_loss(reg, W_list, scaling_factor=0.5):
+          norm_sum = 0
+          for W in W_list:
+            # **2 is a squaring operation; this is like taking the euclidean norm of the weight vectors
+            norm_sum += np.sum(W**2)
+          # a scaling factor is often used to "make the derivatives nicer" 
+          # ie. have smaller magnitude values for stability of gradient descent
+          reg_loss = reg*norm_sum*scaling_factor*1/scaling_factor
+          return reg_loss
+
+        # computing loss amounts to the sum of data loss and regularization loss
+        loss = avg_cross_entropy_data_loss(probs) + L2_regularization_loss(reg, [W1, W2], scaling_factor=1.0)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -111,7 +149,35 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # Backward pass is the second step in backpropagation algorithm, which computes 
+        # the gradients of the loss function with respect to the weight and bias parameters. 
+        # The gradients are used to update the values of the weight and bias vectors for 
+        # better model accuracy.
+
+
+        dprob = probs.copy() # derivative of scores
+        dprob[np.arange(N), y] -= 1 # derivative of scores wrt true classes
+        
+        # Compute gradient for W2 and b2
+        db2 = sum(dprob) / N 
+        dW2 = np.dot(g.T, dprob) / N
+        
+        # Backpropagate the error to hidden layer 1
+        dz = np.dot(dprob, W2.T)
+        dz[g <= 0] = 0 # ReLU derivative is step-function
+        
+        # Compute gradient for W1 and b1
+        db1 = sum(dz) / N 
+        dW1 = np.dot(X.T, dz) / N
+
+        # Add regularization to gradients
+        dW2 += reg*W2*2
+        dW1 += reg*W1*2
+
+        grads['W1'] = dW1
+        grads['W2'] = dW2
+        grads['b1'] = db1
+        grads['b2'] = db2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
