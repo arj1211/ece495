@@ -8,6 +8,7 @@
 #include "helpers.h"
 #include "json.hpp"
 #include "spline.h"
+#include "planning.h"
 
 // for convenience
 using nlohmann::json;
@@ -107,7 +108,7 @@ int main() {
             car_s = end_path_s;
           }
         
-          bool too_close = false; // True if too close to a car in front
+          /* bool too_close = false; // True if too close to a car in front
         
           // Find ref_v to use
           for (int i = 0; i < sensor_fusion.size(); i++) {
@@ -127,8 +128,41 @@ int main() {
                 too_close = true;
               } 
             }
+          } */
+
+          // Find which lanes are blocked
+          int val = car_in_lanes(sensor_fusion, car_s, prev_size);
+          bool too_close_lane0 = (bool)(4 & val);
+          bool too_close_lane1 = (bool)(2 & val);
+          bool too_close_lane2 = (bool)(1 & val);
+          
+          
+          bool too_close = (bool)((int)pow(2, 2-lane) & val);
+
+
+
+
+
+          std::cout << "in lane: " << lane << std::endl;
+          std::cout << "Lanes Occupied: " << too_close_lane0 << " " << too_close_lane1 << " " << too_close_lane2 << std::endl;
+          std::cout << "Current Lane Occupied: " << too_close << std::endl;
+          std::cout << std::endl;
+
+          if (too_close) {
+            if (lane != 1 && !too_close_lane1) // not in middle lane
+            {
+              lane = 1;
+            }
+            else if (!too_close_lane0)
+            {
+              lane = 0;
+            }
+            else if (!too_close_lane2) 
+            {
+              lane = 2;
+            }
           }
-        
+
           // Create a list of evenly spaced waypoints 30m apart
           // Interpolate those waypoints later with spline and fill it in with more points
           vector<double> ptsx;
