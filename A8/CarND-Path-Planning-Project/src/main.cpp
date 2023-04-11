@@ -15,6 +15,11 @@ using nlohmann::json;
 using std::string;
 using std::vector;
 
+
+const int LANE_SWITCH_COOLDOWN_THRESHOLD = (int)(1.0/0.02); // [timesteps]
+
+int lane_switch_cooldown = 0;
+
 int main() {
   uWS::Hub h;
 
@@ -131,7 +136,7 @@ int main() {
           } */
 
           // Find which lanes are blocked
-          int val = car_in_lanes(sensor_fusion, car_s, prev_size);
+          int val = car_in_lanes(sensor_fusion, car_s, prev_size, lane);
           bool too_close_lane0 = (bool)(4 & val);
           bool too_close_lane1 = (bool)(2 & val);
           bool too_close_lane2 = (bool)(1 & val);
@@ -143,23 +148,29 @@ int main() {
 
 
 
-          std::cout << "in lane: " << lane << std::endl;
-          std::cout << "Lanes Occupied: " << too_close_lane0 << " " << too_close_lane1 << " " << too_close_lane2 << std::endl;
-          std::cout << "Current Lane Occupied: " << too_close << std::endl;
-          std::cout << std::endl;
+          // std::cout << "in lane: " << lane << std::endl;
+          // std::cout << "Lanes Occupied: " << too_close_lane0 << " " << too_close_lane1 << " " << too_close_lane2 << std::endl;
+          // std::cout << "Current Lane Occupied: " << too_close << std::endl;
+          // std::cout << std::endl;
 
-          if (too_close) {
+
+          if (lane_switch_cooldown != 0) lane_switch_cooldown--;
+
+          if (too_close && lane_switch_cooldown==0) {
             if (lane != 1 && !too_close_lane1) // not in middle lane
             {
               lane = 1;
+              lane_switch_cooldown = LANE_SWITCH_COOLDOWN_THRESHOLD;
             }
-            else if (!too_close_lane0)
+            else if (lane == 1 && !too_close_lane0)
             {
               lane = 0;
+              lane_switch_cooldown = LANE_SWITCH_COOLDOWN_THRESHOLD;
             }
-            else if (!too_close_lane2) 
+            else if (lane == 1 && !too_close_lane2) 
             {
               lane = 2;
+              lane_switch_cooldown = LANE_SWITCH_COOLDOWN_THRESHOLD;
             }
           }
 
