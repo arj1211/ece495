@@ -15,6 +15,7 @@ using nlohmann::json;
 using std::string;
 using std::vector;
 
+const double PI = 3.1415926535897;
 
 const int LANE_SWITCH_COOLDOWN_THRESHOLD = (int)(1.0/0.02); // [timesteps]
 
@@ -141,18 +142,12 @@ int main() {
           bool too_close_lane1 = (bool)(2 & val);
           bool too_close_lane2 = (bool)(1 & val);
           
-          
           bool too_close = (bool)((int)pow(2, 2-lane) & val);
-
-
-
-
 
           // std::cout << "in lane: " << lane << std::endl;
           // std::cout << "Lanes Occupied: " << too_close_lane0 << " " << too_close_lane1 << " " << too_close_lane2 << std::endl;
           // std::cout << "Current Lane Occupied: " << too_close << std::endl;
           // std::cout << std::endl;
-
 
           if (lane_switch_cooldown != 0) lane_switch_cooldown--;
 
